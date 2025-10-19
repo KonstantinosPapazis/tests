@@ -1,0 +1,73 @@
+# Example configuration using TAG-BASED KMS key lookup
+# This approach uses KMS key alias instead of Terragrunt dependencies
+
+terraform {
+  source = "../../../modules/s3-with-tag-lookup"
+}
+
+include "root" {
+  path = find_in_parent_folders()
+}
+
+# Generate additional provider for destination region
+generate "provider_destination" {
+  path      = "provider_destination.tf"
+  if_exists = "overwrite"
+  contents  = <<EOF
+provider "aws" {
+  alias  = "destination"
+  region = "us-west-2"
+  
+  default_tags {
+    tags = {
+      Environment = "dev"
+      Region      = "us-west-2"
+      ManagedBy   = "Terragrunt"
+    }
+  }
+}
+EOF
+}
+
+# NO DEPENDENCY BLOCK NEEDED! 
+# Instead, we use KMS alias or tags to identify the destination key
+
+inputs = {
+  bucket_name = "my-company-eu-west-2-bucket-dev"
+  
+  # KMS key tags for identification
+  kms_key_tags = {
+    ReplicationKey = "true"
+    BucketRegion   = "eu-west-2"
+  }
+  
+  # Enable replication with tag-based KMS lookup
+  enable_replication     = true
+  use_kms_tag_lookup    = true
+  destination_region    = "us-west-2"
+  
+  # OPTION 1: Use KMS alias (recommended - simpler and faster)
+  replication_destination_kms_alias = "my-company-us-west-2-bucket-dev"
+  
+  # OPTION 2: Use tags to find KMS key (more flexible but slower)
+  # Uncomment below and remove alias above to use tags instead
+  # replication_destination_kms_tags = {
+  #   ReplicationKey = "true"
+  #   BucketRegion   = "us-west-2"
+  # }
+  
+  # Still need the destination bucket ARN
+  # You can hardcode this or use dependency for just the bucket
+  replication_destination_bucket_arn = "arn:aws:s3:::my-company-us-west-2-bucket-dev"
+  replication_storage_class          = "STANDARD"
+  
+  kms_deletion_window = 30
+  
+  tags = {
+    Environment = "dev"
+    Region      = "eu-west-2"
+    ManagedBy   = "Terragrunt"
+    Service     = "s3-replication"
+  }
+}
+
