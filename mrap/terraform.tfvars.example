@@ -1,0 +1,41 @@
+# ============================================================================
+# Terraform Variables Configuration for MRAP
+# ============================================================================
+#
+# 1. Copy this file to terraform.tfvars:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Update the values below with your bucket names
+#
+# 3. Run terraform:
+#    terraform init
+#    terraform plan
+#    terraform apply
+#
+# ============================================================================
+
+# Name for your Multi-Region Access Point (must be unique in your AWS account)
+mrap_name = "my-global-access-point"
+
+# Your existing or new bucket in EU (eu-west-2)
+eu_bucket_name = "my-bucket-eu-west-2"
+
+# Your existing or new bucket in US (us-east-2)
+us_bucket_name = "my-bucket-us-east-2"
+
+# Set to false if your buckets already exist
+# Set to true if you want Terraform to create new buckets
+create_buckets = true
+
+# Enable S3 Replication Time Control for guaranteed 15-minute replication
+# Costs extra but provides predictable replication time
+enable_replication_time_control = true
+
+# Optional: Add custom tags
+tags = {
+  Environment = "production"
+  ManagedBy   = "terraform"
+  Purpose     = "mrap-global-access"
+  Team        = "platform"
+}
+
