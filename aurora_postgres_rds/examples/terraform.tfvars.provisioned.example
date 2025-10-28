@@ -1,0 +1,174 @@
+##############################################
+# Example terraform.tfvars for Provisioned Aurora PostgreSQL
+# Copy this file to your environment directory and customize
+##############################################
+
+##############################################
+# General Configuration
+##############################################
+
+aws_region         = "us-east-1"
+project_name       = "my-application"
+cost_center        = "engineering"
+cluster_identifier = "prod-aurora-postgres"
+
+# PostgreSQL version - Choose from: 16.1, 15.4, 14.9, 13.12
+engine_version = "16.1"
+
+database_name   = "myapp"
+master_username = "postgres"
+
+# Let RDS manage the password in Secrets Manager (recommended)
+manage_master_password = true
+
+##############################################
+# Instance Configuration
+##############################################
+
+# Instance class recommendations:
+# - db.r6g.large    : 2 vCPU, 16 GB RAM  (~$190/month per instance)
+# - db.r6g.xlarge   : 4 vCPU, 32 GB RAM  (~$380/month per instance)
+# - db.r6g.2xlarge  : 8 vCPU, 64 GB RAM  (~$760/month per instance)
+# - db.r7g.large    : 2 vCPU, 16 GB RAM  (~$210/month per instance) - 7th gen, better performance
+instance_class = "db.r6g.large"
+
+# Number of instances (1 writer + n readers)
+# Minimum 2 for high availability
+instance_count = 2
+
+# Leave empty to automatically select 3 AZs in the region
+availability_zones = []
+
+##############################################
+# Network Configuration
+##############################################
+
+# Use existing VPC
+create_vpc = false
+vpc_id     = "vpc-0123456789abcdef0"
+
+# Or create new VPC
+# create_vpc = true
+# vpc_cidr   = "10.0.0.0/16"
+
+# CIDR blocks allowed to connect (e.g., your application subnets)
+allowed_cidr_blocks = [
+  "10.0.0.0/16",  # VPC CIDR
+]
+
+# Or use security groups
+allowed_security_groups = [
+  # "sg-0123456789abcdef0",  # Application security group
+]
+
+enable_nat_gateway   = true
+enable_vpc_endpoints = true
+
+##############################################
+# Backup Configuration
+##############################################
+
+# Backup retention (1-35 days)
+backup_retention_period = 30
+
+# Backup window (UTC) - Choose off-peak hours
+preferred_backup_window = "03:00-04:00"
+
+# Maintenance window (UTC) - Choose off-peak hours
+preferred_maintenance_window = "mon:04:00-mon:05:00"
+
+# IMPORTANT: Set to false for production!
+skip_final_snapshot = false
+
+# Backtrack window in seconds (0 to disable, max 259200 = 72 hours)
+# Note: Available for some engine versions, check AWS docs
+backtrack_window = 0
+
+##############################################
+# Encryption
+##############################################
+
+storage_encrypted = true
+create_kms_key    = true
+
+##############################################
+# Parameter Group Configuration
+##############################################
+
+# Must match engine version: aurora-postgresql16, aurora-postgresql15, etc.
+parameter_group_family = "aurora-postgresql16"
+
+# Logging configuration
+log_statement              = "ddl"     # none, ddl, mod, all
+log_min_duration_statement = "1000"    # Log queries > 1 second (ms)
+log_connections            = true
+log_disconnections         = true
+
+# Preload libraries
+shared_preload_libraries = "pg_stat_statements,pg_hint_plan"
+
+# Memory settings (KB)
+work_mem             = "16384"    # 16 MB per operation
+maintenance_work_mem = "2097152"  # 2 GB for maintenance
+
+# Force SSL connections
+force_ssl = true
+
+##############################################
+# IAM and Authentication
+##############################################
+
+iam_database_authentication_enabled = true
+
+##############################################
+# Monitoring
+##############################################
+
+enable_enhanced_monitoring            = true
+monitoring_interval                   = 60  # seconds
+enable_performance_insights           = true
+performance_insights_retention_period = 7   # or 731 for 2 years
+enabled_cloudwatch_logs_exports       = ["postgresql"]
+
+##############################################
+# Auto Scaling
+##############################################
+
+enable_autoscaling             = true
+autoscaling_min_capacity       = 1    # Minimum read replicas
+autoscaling_max_capacity       = 5    # Maximum read replicas
+autoscaling_target_cpu         = 70   # Target CPU %
+autoscaling_target_connections = 700  # Target connections
+
+##############################################
+# CloudWatch Alarms
+##############################################
+
+create_cloudwatch_alarms = true
+create_sns_topic         = true
+
+# Add your email addresses for alarm notifications
+alarm_email_addresses = [
+  # "ops-team@example.com",
+  # "dba-team@example.com",
+]
+
+##############################################
+# Advanced Configuration
+##############################################
+
+deletion_protection        = true
+apply_immediately          = false  # Apply changes during maintenance window
+auto_minor_version_upgrade = true
+
+##############################################
+# Tags
+##############################################
+
+tags = {
+  Application = "MyApp"
+  Team        = "Platform"
+  Compliance  = "HIPAA"
+  Backup      = "Required"
+}
+

@@ -1,0 +1,198 @@
+##############################################
+# Example terraform.tfvars for Serverless Aurora PostgreSQL v2
+# Copy this file to your environment directory and customize
+##############################################
+
+##############################################
+# General Configuration
+##############################################
+
+aws_region         = "us-east-1"
+project_name       = "my-application"
+cost_center        = "engineering"
+cluster_identifier = "prod-aurora-serverless-postgres"
+
+# PostgreSQL version - Choose from: 16.1, 15.4, 14.9, 13.12
+# Ensure version supports Serverless v2
+engine_version = "16.1"
+
+database_name   = "myapp"
+master_username = "postgres"
+
+# Let RDS manage the password in Secrets Manager (recommended)
+manage_master_password = true
+
+##############################################
+# Serverless Configuration
+##############################################
+
+# ACU (Aurora Capacity Unit) = ~2 GB RAM + corresponding CPU
+# Range: 0.5 to 128 ACUs
+# Cost: ~$0.12 per ACU-hour (us-east-1)
+
+# Minimum capacity (idle workload)
+# - 0.5 ACU  : ~1 GB RAM  (~$45/month if always at min)
+# - 1 ACU    : ~2 GB RAM  (~$90/month if always at min)
+# - 2 ACU    : ~4 GB RAM  (~$180/month if always at min)
+serverless_min_capacity = 0.5
+
+# Maximum capacity (peak workload)
+# - 4 ACU    : ~8 GB RAM
+# - 8 ACU    : ~16 GB RAM
+# - 16 ACU   : ~32 GB RAM
+# - 32 ACU   : ~64 GB RAM
+# - 64 ACU   : ~128 GB RAM
+# - 128 ACU  : ~256 GB RAM
+serverless_max_capacity = 16
+
+# Number of instances (1 writer + n readers for HA)
+# Minimum 2 for high availability
+instance_count = 2
+
+# Leave empty to automatically select 3 AZs in the region
+availability_zones = []
+
+##############################################
+# Network Configuration
+##############################################
+
+# Use existing VPC
+create_vpc = false
+vpc_id     = "vpc-0123456789abcdef0"
+
+# Or create new VPC
+# create_vpc = true
+# vpc_cidr   = "10.0.0.0/16"
+
+# CIDR blocks allowed to connect (e.g., your application subnets)
+allowed_cidr_blocks = [
+  "10.0.0.0/16",  # VPC CIDR
+]
+
+# Or use security groups
+allowed_security_groups = [
+  # "sg-0123456789abcdef0",  # Application security group
+]
+
+enable_nat_gateway   = true
+enable_vpc_endpoints = true
+
+##############################################
+# Backup Configuration
+##############################################
+
+# Backup retention (1-35 days)
+backup_retention_period = 30
+
+# Backup window (UTC) - Choose off-peak hours
+preferred_backup_window = "03:00-04:00"
+
+# Maintenance window (UTC) - Choose off-peak hours
+preferred_maintenance_window = "mon:04:00-mon:05:00"
+
+# IMPORTANT: Set to false for production!
+skip_final_snapshot = false
+
+##############################################
+# Encryption
+##############################################
+
+storage_encrypted = true
+create_kms_key    = true
+
+##############################################
+# Parameter Group Configuration
+##############################################
+
+# Must match engine version: aurora-postgresql16, aurora-postgresql15, etc.
+parameter_group_family = "aurora-postgresql16"
+
+# Logging configuration
+log_statement              = "ddl"     # none, ddl, mod, all
+log_min_duration_statement = "1000"    # Log queries > 1 second (ms)
+log_connections            = true
+log_disconnections         = true
+
+# Preload libraries
+shared_preload_libraries = "pg_stat_statements,pg_hint_plan"
+
+# Memory settings (KB)
+work_mem             = "16384"    # 16 MB per operation
+maintenance_work_mem = "2097152"  # 2 GB for maintenance
+
+# Force SSL connections
+force_ssl = true
+
+##############################################
+# IAM and Authentication
+##############################################
+
+iam_database_authentication_enabled = true
+
+##############################################
+# Monitoring
+##############################################
+
+enable_enhanced_monitoring            = true
+monitoring_interval                   = 60  # seconds
+enable_performance_insights           = true
+performance_insights_retention_period = 7   # or 731 for 2 years
+enabled_cloudwatch_logs_exports       = ["postgresql"]
+
+##############################################
+# CloudWatch Alarms
+##############################################
+
+create_cloudwatch_alarms = true
+create_sns_topic         = true
+
+# Add your email addresses for alarm notifications
+alarm_email_addresses = [
+  # "ops-team@example.com",
+  # "dba-team@example.com",
+]
+
+##############################################
+# Advanced Configuration
+##############################################
+
+deletion_protection        = true
+apply_immediately          = false  # Apply changes during maintenance window
+auto_minor_version_upgrade = true
+
+##############################################
+# Tags
+##############################################
+
+tags = {
+  Application = "MyApp"
+  Team        = "Platform"
+  Compliance  = "HIPAA"
+  Backup      = "Required"
+  CostModel   = "Serverless"
+}
+
+##############################################
+# Cost Estimation Examples
+##############################################
+
+# Example 1: Low-traffic application
+# - Min: 0.5 ACU, Max: 4 ACU
+# - Average 1 ACU usage, 2 instances
+# - ~$180/month (0.12 * 1 ACU * 2 instances * 730 hours)
+
+# Example 2: Medium-traffic application
+# - Min: 1 ACU, Max: 16 ACU
+# - Average 4 ACU usage, 2 instances
+# - ~$700/month (0.12 * 4 ACU * 2 instances * 730 hours)
+
+# Example 3: Variable workload
+# - Min: 0.5 ACU (nights/weekends)
+# - Max: 32 ACU (business hours peaks)
+# - Average 8 ACU usage, 2 instances
+# - ~$1,400/month (0.12 * 8 ACU * 2 instances * 730 hours)
+
+# Compare to provisioned:
+# - db.r6g.large (2 instances) = ~$380/month
+# - Serverless is cost-effective when average usage < 2.5 ACU
+
