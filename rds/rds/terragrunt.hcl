@@ -46,6 +46,20 @@ inputs = {
       "apply_method" = "pending-reboot"
       "name"         = "rds.logical_replication"
       "value"        = "1"
+    },
+    # Optional but recommended: Increase replication capacity for blue/green deployments
+    # Blue/green creates temporary replication slots/senders between blue and green environments
+    # Defaults: max_replication_slots=10, max_wal_senders=10, max_logical_replication_workers=4
+    # If blue/green fails with "unable to create replication channel", increase these values
+    {
+      "apply_method" = "pending-reboot"
+      "name"         = "max_replication_slots"
+      "value"        = "15"  # Default 10 + buffer for blue/green; safe for production
+    },
+    {
+      "apply_method" = "pending-reboot"
+      "name"         = "max_wal_senders"
+      "value"        = "15"  # Must be >= max_replication_slots; minimal memory impact
     }
   ]
 }
